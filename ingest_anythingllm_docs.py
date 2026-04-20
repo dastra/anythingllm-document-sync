@@ -58,7 +58,7 @@ def upload_new_documents(anything_llm: AnythingLLM, database: DocumentDatabase, 
                         document_loaded = False
                         break
                 else:
-                    document_loaded = True
+                    document_loaded = False
                     break
 
         if not document_loaded:
