@@ -55,7 +55,7 @@ def upload_new_documents(anything_llm: AnythingLLM, database: DocumentDatabase, 
                         break
                     else:
                         print('Failed to remove old version of document from AnythingLLM: ' + local_document)
-                        document_loaded = True
+                        document_loaded = False
                         break
                 else:
                     document_loaded = True
@@ -106,6 +106,7 @@ def remove_embedded_documents(anything_llm: AnythingLLM, local_documents: list, 
         if embedded_document_local_path is None:
             # If the document path isn't in the database of local files, then delete it
             documents_to_unembed.append(embedded_document)
+            continue
 
         embedded_document_found_locally = False
         for local_document in local_documents:
@@ -134,11 +135,11 @@ def remove_loaded_documents(anything_llm: AnythingLLM, database: DocumentDatabas
 
         if not document_present_locally:
             # If the document path isn't in the database of local files, then delete it
-            documents_to_unload.append(loaded_document.anythingllm_document_location)
+            documents_to_unload.append(loaded_document)
 
     for document_to_unload in documents_to_unload:
-        if anything_llm.unload_document(document_to_unload):
-            database.remove_document(document_to_unload)
+        if anything_llm.unload_document(document_to_unload.anythingllm_document_location):
+            database.remove_document(document_to_unload.local_file_path)
 
 
 def main():
