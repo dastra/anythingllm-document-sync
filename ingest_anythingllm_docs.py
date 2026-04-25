@@ -37,109 +37,64 @@ def fetch_local_documents(config: AnythingLLMConfig):
 def upload_new_documents(anything_llm: AnythingLLM, database: DocumentDatabase, local_documents: list[str],
                          loaded_documents: list[AnythingLLMDocument]):
 
-    # compare the list of local documents with embedded documents to find the local documents that need embedding
+    loaded_by_path = {doc.local_file_path: doc for doc in loaded_documents}
+
     for local_document in local_documents:
-        # local_document is a file path string
-
-        document_loaded = False
         local_document_modified_timestamp = datetime.fromtimestamp(pathlib.Path(local_document).stat().st_mtime, tz=timezone.utc)
-        for loaded_document in loaded_documents:
-            if loaded_document.local_file_path == local_document:
+        loaded_document = loaded_by_path.get(local_document)
 
-                # if the date of the file is after the time that the loaded_document.upload_timestamp the load again
-                if int(local_document_modified_timestamp.strftime('%Y%m%d%H%M%S')) > int(
-                        loaded_document.upload_timestamp.strftime('%Y%m%d%H%M%S')):
-                    # Remove old version from AnythingLLM before uploading the new one
-                    if anything_llm.unload_document(loaded_document.anythingllm_document_location):
-                        database.remove_document(loaded_document.local_file_path)
-                        break
-                    else:
-                        print('Failed to remove old version of document from AnythingLLM: ' + local_document)
-                        document_loaded = False
-                        break
+        if loaded_document is not None:
+            # if the date of the file is after the time that the loaded_document.upload_timestamp the load again
+            if int(local_document_modified_timestamp.strftime('%Y%m%d%H%M%S')) > int(
+                    loaded_document.upload_timestamp.strftime('%Y%m%d%H%M%S')):
+                # Remove old version from AnythingLLM before uploading the new one
+                if anything_llm.unload_document(loaded_document.anythingllm_document_location):
+                    database.remove_document(loaded_document.local_file_path)
                 else:
-                    document_loaded = True
-                    break
+                    print('Failed to remove old version of document from AnythingLLM: ' + local_document)
+                # fall through to re-upload regardless of whether unload succeeded
+            else:
+                continue  # file unchanged, skip upload
 
-        if not document_loaded:
-            # upload the document
-            anything_llm_response = anything_llm.upload_document(local_document)
-            if anything_llm_response is not None:
-                database.add_document(AnythingLLMDocument(local_document, local_document_modified_timestamp,
-                                                          anything_llm_response['location'], json.dumps(anything_llm_response)
-                ))
+        # upload the document
+        anything_llm_response = anything_llm.upload_document(local_document)
+        if anything_llm_response is not None:
+            database.add_document(AnythingLLMDocument(local_document, local_document_modified_timestamp,
+                                                      anything_llm_response['location'], json.dumps(anything_llm_response)
+            ))
 
 
 def embed_new_documents(anything_llm: AnythingLLM, loaded_documents: list[AnythingLLMDocument], embedded_documents: list):
-    documents_to_embed = []
-
-    # Work out which documents are loaded but not yet embedded
-    for loaded_document in loaded_documents:
-        document_embedded = False
-        for embedded_document in embedded_documents:
-            if embedded_document == loaded_document.anythingllm_document_location:
-                document_embedded = True
-                break
-
-        if not document_embedded:
-            documents_to_embed.append(loaded_document.anythingllm_document_location)
+    embedded_set = set(embedded_documents)
 
     # embedding one at a time as larger batches seem to max out CPU
-    for document_to_embed in documents_to_embed:
-        anything_llm.embed_new_document(document_to_embed)
+    for loaded_document in loaded_documents:
+        if loaded_document.anythingllm_document_location not in embedded_set:
+            anything_llm.embed_new_document(loaded_document.anythingllm_document_location)
 
 
 def remove_embedded_documents(anything_llm: AnythingLLM, local_documents: list, loaded_documents: list[AnythingLLMDocument],
                               embedded_documents: list):
-    documents_to_unembed = []
+    local_path_by_location = {doc.anythingllm_document_location: doc.local_file_path for doc in loaded_documents}
+    local_documents_set = set(local_documents)
 
     for embedded_document in embedded_documents:
         # embedded_document is the loaded path:
         # "custom-documents/How-To.md-750a5515-ed82-4c2c-96b7-583463bab449.json"
+        local_path = local_path_by_location.get(embedded_document)
 
-        embedded_document_local_path = None
-        for loaded_document in loaded_documents:
-            if loaded_document.anythingllm_document_location == embedded_document:
-                embedded_document_local_path = loaded_document.local_file_path
-                break
-
-        if embedded_document_local_path is None:
-            # If the document path isn't in the database of local files, then delete it
-            documents_to_unembed.append(embedded_document)
-            continue
-
-        embedded_document_found_locally = False
-        for local_document in local_documents:
-            if embedded_document_local_path == local_document:
-                embedded_document_found_locally = True
-                break
-
-        if not embedded_document_found_locally:
-            documents_to_unembed.append(embedded_document)
-
-    for document_to_unembed in documents_to_unembed:
-        anything_llm.unembed_document(document_to_unembed)
+        if local_path is None or local_path not in local_documents_set:
+            anything_llm.unembed_document(embedded_document)
 
 
 def remove_loaded_documents(anything_llm: AnythingLLM, database: DocumentDatabase, local_documents: list,
                             loaded_documents: list[AnythingLLMDocument]):
-    documents_to_unload = []
+    local_documents_set = set(local_documents)
 
     for loaded_document in loaded_documents:
-        document_present_locally = False
-
-        for local_document in local_documents:
-            if loaded_document.local_file_path == local_document:
-                document_present_locally = True
-                break
-
-        if not document_present_locally:
-            # If the document path isn't in the database of local files, then delete it
-            documents_to_unload.append(loaded_document)
-
-    for document_to_unload in documents_to_unload:
-        if anything_llm.unload_document(document_to_unload.anythingllm_document_location):
-            database.remove_document(document_to_unload.local_file_path)
+        if loaded_document.local_file_path not in local_documents_set:
+            if anything_llm.unload_document(loaded_document.anythingllm_document_location):
+                database.remove_document(loaded_document.local_file_path)
 
 
 def main():

@@ -26,15 +26,16 @@ class DocumentDatabase:
 
         """Initialize the database and create tables if they don't exist."""
         if not os.path.exists(DATABASE_FILENAME):
+            conn = None
             try:
                 with sqlite3.connect(DATABASE_FILENAME) as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
                         CREATE TABLE documents (
-                            id INTEGER PRIMARY KEY, 
-                            local_file_path TEXT, 
+                            id INTEGER PRIMARY KEY,
+                            local_file_path TEXT,
                             upload_timestamp DATETIME,
-                            anythingllm_document_location TEXT, 
+                            anythingllm_document_location TEXT,
                             content TEXT
                         )
                     ''')

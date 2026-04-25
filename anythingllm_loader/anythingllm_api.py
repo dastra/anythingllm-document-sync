@@ -1,5 +1,4 @@
 import os
-import re
 
 import requests
 from requests import Response
@@ -47,12 +46,13 @@ class AnythingLLM:
             print(local_document_path + " is not a supported file type. Skipping.")
             return
 
-        response: Response = requests.post('http://localhost:3001/api/v1/document/upload', headers={
-            'accept': 'application/json',
-            'Authorization': 'Bearer ' + self.config.api_key
-        }, files={
-            'file': open(local_document_path, 'rb')
-        })
+        with open(local_document_path, 'rb') as f:
+            response: Response = requests.post('http://localhost:3001/api/v1/document/upload', headers={
+                'accept': 'application/json',
+                'Authorization': 'Bearer ' + self.config.api_key
+            }, files={
+                'file': f
+            })
 
         # Response looks like this
         # {
@@ -157,22 +157,21 @@ class AnythingLLM:
 
         print("Removing document: " + document_to_unload)
 
-        # Extract the excel spreadsheet name from the anythingllm_document_location
-        # Excel spreadsheet looks like this: aws-game-day-and-re-invent-recap-sign-up-(responses).xlsx-2ce4/sheet-Form-responses-1.json
-        # If the document to unload is an excel spreadsheet, then we need to remove the entire spreadsheet
-        if re.search(r".*\.xlsx-\w+\/sheet.*", document_to_unload):
-            document_to_unload = document_to_unload.split('/')[-2]
-
         # Delete the document.
-        response: Response = requests.delete('http://localhost:3001/api/v1/system/remove-documents',
-                                           headers={
-                                               'accept': 'application/json',
-                                               'Content-Type': 'application/json',
-                                               'Authorization': 'Bearer ' + self.config.api_key
-                                           }, json={
-                "names": [document_to_unload]
-            },
-                                           timeout=60)
+        try:
+            response: Response = requests.delete('http://localhost:3001/api/v1/system/remove-documents',
+                                               headers={
+                                                   'accept': 'application/json',
+                                                   'Content-Type': 'application/json',
+                                                   'Authorization': 'Bearer ' + self.config.api_key
+                                               }, json={
+                    "names": [document_to_unload]
+                },
+                                               timeout=60)
+        except Exception as e:
+            print(f'Exception occurred while removing {document_to_unload}: {str(e)}')
+            return False
+
         # throw an error if the response is not 200
         if response.status_code != 200:
             print('Failed to remove documents: ' + response.text)
@@ -306,16 +305,21 @@ class AnythingLLM:
         # }'
 
         # Embed the documents
-        response: Response = requests.post(
-            'http://localhost:3001/api/v1/workspace/' + self.config.workspace_slug + '/update-embeddings',
-            headers={
-                'accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + self.config.api_key
-            }, json={
-                "deletes": [document_to_unembed]
-            },
-            timeout=60)
+        try:
+            response: Response = requests.post(
+                'http://localhost:3001/api/v1/workspace/' + self.config.workspace_slug + '/update-embeddings',
+                headers={
+                    'accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + self.config.api_key
+                }, json={
+                    "deletes": [document_to_unembed]
+                },
+                timeout=60)
+        except Exception as e:
+            print(f'Exception occurred while unembedding {document_to_unembed}: {str(e)}')
+            return
+
         # throw an error if the response is not 200
         if response.status_code != 200:
             print('Failed to unembed documents: ' + response.text)
