@@ -46,13 +46,17 @@ class AnythingLLM:
             print(local_document_path + " is not a supported file type. Skipping.")
             return
 
-        with open(local_document_path, 'rb') as f:
-            response: Response = requests.post('http://localhost:3001/api/v1/document/upload', headers={
-                'accept': 'application/json',
-                'Authorization': 'Bearer ' + self.config.api_key
-            }, files={
-                'file': f
-            })
+        try:
+            with open(local_document_path, 'rb') as f:
+                response: Response = requests.post('http://localhost:3001/api/v1/document/upload', headers={
+                    'accept': 'application/json',
+                    'Authorization': 'Bearer ' + self.config.api_key
+                }, files={
+                    'file': f
+                })
+        except Exception as e:
+            print(f'Exception occurred while uploading {local_document_path}: {str(e)}')
+            return
 
         # Response looks like this
         # {
@@ -76,7 +80,7 @@ class AnythingLLM:
         #   ]
         # }
 
-        # throw an error if the response is not 200
+        # return None/False if the response is not 200
         if response.status_code != 200:
             print('Failed to upload document: ' + local_document_path + ": " + response.text)
             return
@@ -172,7 +176,7 @@ class AnythingLLM:
             print(f'Exception occurred while removing {document_to_unload}: {str(e)}')
             return False
 
-        # throw an error if the response is not 200
+        # return None/False if the response is not 200
         if response.status_code != 200:
             print('Failed to remove documents: ' + response.text)
             return False
@@ -205,7 +209,7 @@ class AnythingLLM:
                     "adds": [document_to_embed]
                 },
                 timeout=60)
-            # throw an error if the response is not 200
+            # return None/False if the response is not 200
             if response.status_code != 200:
                 print('Failed to embed documents: ' + response.text)
                 return
@@ -320,6 +324,6 @@ class AnythingLLM:
             print(f'Exception occurred while unembedding {document_to_unembed}: {str(e)}')
             return
 
-        # throw an error if the response is not 200
+        # return None/False if the response is not 200
         if response.status_code != 200:
             print('Failed to unembed documents: ' + response.text)

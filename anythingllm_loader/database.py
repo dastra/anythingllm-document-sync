@@ -26,7 +26,6 @@ class DocumentDatabase:
 
         """Initialize the database and create tables if they don't exist."""
         if not os.path.exists(DATABASE_FILENAME):
-            conn = None
             try:
                 with sqlite3.connect(DATABASE_FILENAME) as conn:
                     cursor = conn.cursor()
@@ -44,9 +43,6 @@ class DocumentDatabase:
             except sqlite3.Error as e:
                 print(f"Error creating database: {e}")
                 return False
-            finally:
-                if conn:
-                    conn.close()
         return True
 
     @staticmethod

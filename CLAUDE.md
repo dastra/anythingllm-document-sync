@@ -54,7 +54,6 @@ The tool syncs local files into an AnythingLLM workspace. There are two distinct
 
 ## Known limitations / TODOs
 
-- Modified documents are detected (timestamp comparison) but re-upload is not yet implemented (prints "TODO: Upload document ...")
-- `remove_loaded_documents` appends `loaded_document.anythingllm_document_location` to `documents_to_unload`, then passes that to `database.remove_document` which deletes by `local_file_path` — so the DB record is never cleaned up after deletion
 - Embeddings are done one at a time with a 0.5s sleep to avoid overloading AnythingLLM
+- `embed_new_document` does not surface non-200 responses as a return value, so embedding failures are printed but not acted on by the caller
 - Supported file types: `txt`, `md`, `org`, `adoc`, `rst`, `html`, `docx`, `odt`, `odp`, `pdf`, `mbox`, `epub`
