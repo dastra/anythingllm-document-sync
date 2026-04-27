@@ -40,6 +40,7 @@ Create `~/.anythingllm-sync/config.yaml`:
 ```yaml
 api-key: YOUR-API-KEY
 workspace-slug: your-workspace
+anythingllm-url: http://localhost:3001  # optional, defaults to http://localhost:3001
 file-paths:
   - /Users/username/Documents/
 directory-excludes:
@@ -51,6 +52,8 @@ file-excludes:
 **API key**: AnythingLLM Desktop → spanner icon (bottom right) → Developer API → Generate New API Key
 
 **Workspace slug**: Click workspace → settings cog → Vector Database tab → Vector database identifier
+
+**AnythingLLM URL**: Set `anythingllm-url` if your instance is not at `http://localhost:3001` — e.g. a Docker container on a custom port: `http://localhost:8080`
 
 ## Usage
 
@@ -76,7 +79,7 @@ Document upload state is tracked in `~/.anythingllm-sync/uploaded-docs.db` (SQLi
 pytest tests/test_unit.py -v
 ```
 
-**Integration tests** (requires AnythingLLM running at `http://localhost:3001` and a valid `~/.anythingllm-sync/config.yaml`):
+**Integration tests** (requires AnythingLLM running and a valid `~/.anythingllm-sync/config.yaml`):
 
 ```shell
 pytest tests/test_integration.py -v

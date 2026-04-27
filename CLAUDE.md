@@ -24,6 +24,7 @@ Requires `~/.anythingllm-sync/config.yaml`:
 ```yaml
 api-key: <key>
 workspace-slug: <slug>
+anythingllm-url: http://localhost:3001  # optional, defaults to http://localhost:3001
 file-paths:
   - /path/to/documents/
 directory-excludes:
