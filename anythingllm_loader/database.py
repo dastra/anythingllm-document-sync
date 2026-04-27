@@ -31,10 +31,10 @@ class DocumentDatabase:
                     cursor = conn.cursor()
                     cursor.execute('''
                         CREATE TABLE documents (
-                            id INTEGER PRIMARY KEY, 
-                            local_file_path TEXT, 
+                            id INTEGER PRIMARY KEY,
+                            local_file_path TEXT,
                             upload_timestamp DATETIME,
-                            anythingllm_document_location TEXT, 
+                            anythingllm_document_location TEXT,
                             content TEXT
                         )
                     ''')
@@ -43,9 +43,6 @@ class DocumentDatabase:
             except sqlite3.Error as e:
                 print(f"Error creating database: {e}")
                 return False
-            finally:
-                if conn:
-                    conn.close()
         return True
 
     @staticmethod
