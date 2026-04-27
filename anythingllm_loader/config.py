@@ -6,9 +6,12 @@ CONFIG_DIR = pathlib.Path.home() / ".anythingllm-sync"
 CONFIG_FILE = 'config.yaml'
 
 
+DEFAULT_URL = "http://localhost:3001"
+
 # Config file looks like this:
 # api-key: WFSDFD-ASDAFDFD-Q8M53TR-AAAAS48
 # workspace-slug: aws
+# anythingllm-url: http://localhost:3001   # optional, defaults to http://localhost:3001
 # file-paths:
 #   - /Users/username/Documents/
 # directory-excludes:
@@ -19,12 +22,14 @@ CONFIG_FILE = 'config.yaml'
 class AnythingLLMConfig:
 
     # create init method including all config keys
-    def __init__(self, api_key: str, file_paths: list, directory_excludes: list, file_excludes: list, workspace_slug: str):
+    def __init__(self, api_key: str, file_paths: list, directory_excludes: list, file_excludes: list,
+                 workspace_slug: str, anythingllm_url: str = DEFAULT_URL):
         self.api_key = api_key
         self.file_paths = file_paths
         self.directory_excludes = directory_excludes
         self.file_excludes = file_excludes
         self.workspace_slug = workspace_slug
+        self.anythingllm_url = anythingllm_url.rstrip("/")
 
     @staticmethod
     def load_config():
@@ -50,4 +55,5 @@ class AnythingLLMConfig:
             raise FileNotFoundError(str(CONFIG_DIR) + "/" + CONFIG_FILE + " file not found")
 
         return AnythingLLMConfig(config["api-key"], config["file-paths"], config["directory-excludes"],
-                                 config["file-excludes"], config["workspace-slug"])
+                                 config["file-excludes"], config["workspace-slug"],
+                                 config.get("anythingllm-url", DEFAULT_URL))

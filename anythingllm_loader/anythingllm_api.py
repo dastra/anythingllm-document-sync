@@ -13,6 +13,7 @@ class AnythingLLM:
 
     def __init__(self, config: AnythingLLMConfig):
         self.config = config
+        self._base_url = config.anythingllm_url
 
     # Authenticate with local AnythingLLM API
     # curl -X 'GET' \
@@ -20,7 +21,7 @@ class AnythingLLM:
     #   -H 'accept: application/json' \
     #   -H 'Authorization: Bearer $api-key
     def authenticate(self):
-        response = requests.get('http://localhost:3001/api/v1/auth', headers={
+        response = requests.get(f'{self._base_url}/api/v1/auth', headers={
             'accept': 'application/json',
             'Authorization': 'Bearer ' + self.config.api_key
         })
@@ -48,7 +49,7 @@ class AnythingLLM:
 
         try:
             with open(local_document_path, 'rb') as f:
-                response: Response = requests.post('http://localhost:3001/api/v1/document/upload', headers={
+                response: Response = requests.post(f'{self._base_url}/api/v1/document/upload', headers={
                     'accept': 'application/json',
                     'Authorization': 'Bearer ' + self.config.api_key
                 }, files={
@@ -100,7 +101,7 @@ class AnythingLLM:
     #   -H 'accept: application/json'
     #   -H 'Authorization: Bearer $api-key
     def fetch_loaded_documents_from_anythingllm(self):
-        response = requests.get('http://localhost:3001/api/v1/documents', headers={
+        response = requests.get(f'{self._base_url}/api/v1/documents', headers={
             'accept': 'application/json',
             'Authorization': 'Bearer ' + self.config.api_key
         })
@@ -163,7 +164,7 @@ class AnythingLLM:
 
         # Delete the document.
         try:
-            response: Response = requests.delete('http://localhost:3001/api/v1/system/remove-documents',
+            response: Response = requests.delete(f'{self._base_url}/api/v1/system/remove-documents',
                                                headers={
                                                    'accept': 'application/json',
                                                    'Content-Type': 'application/json',
@@ -200,7 +201,7 @@ class AnythingLLM:
         # Embed the documents
         try:
             response: Response = requests.post(
-                'http://localhost:3001/api/v1/workspace/' + self.config.workspace_slug + '/update-embeddings',
+                f'{self._base_url}/api/v1/workspace/{self.config.workspace_slug}/update-embeddings',
                 headers={
                     'accept': 'application/json',
                     'Content-Type': 'application/json',
@@ -250,7 +251,7 @@ class AnythingLLM:
 
     # Fetch all documents which have been embedded into the workspace
     def fetch_embedded_workspace_documents(self):
-        response = requests.get('http://localhost:3001/api/v1/workspace/' + self.config.workspace_slug, headers={
+        response = requests.get(f'{self._base_url}/api/v1/workspace/{self.config.workspace_slug}', headers={
             'accept': 'application/json',
             'Authorization': 'Bearer ' + self.config.api_key
         })
@@ -311,7 +312,7 @@ class AnythingLLM:
         # Embed the documents
         try:
             response: Response = requests.post(
-                'http://localhost:3001/api/v1/workspace/' + self.config.workspace_slug + '/update-embeddings',
+                f'{self._base_url}/api/v1/workspace/{self.config.workspace_slug}/update-embeddings',
                 headers={
                     'accept': 'application/json',
                     'Content-Type': 'application/json',

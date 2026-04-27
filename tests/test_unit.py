@@ -115,6 +115,31 @@ def test_authenticate_sends_api_key_header(api):
     assert headers["Authorization"] == "Bearer test-api-key"
 
 
+def test_authenticate_uses_default_url(api):
+    with patch("requests.get", return_value=_ok_response({"authenticated": True})) as mock_get:
+        api.authenticate()
+    assert mock_get.call_args.args[0] == "http://localhost:3001/api/v1/auth"
+
+
+def test_authenticate_uses_custom_url():
+    custom_config = AnythingLLMConfig(
+        api_key="key", file_paths=[], directory_excludes=[], file_excludes=[],
+        workspace_slug="slug", anythingllm_url="http://myserver:8080"
+    )
+    api = AnythingLLM(custom_config)
+    with patch("requests.get", return_value=_ok_response({"authenticated": True})) as mock_get:
+        api.authenticate()
+    assert mock_get.call_args.args[0] == "http://myserver:8080/api/v1/auth"
+
+
+def test_custom_url_trailing_slash_stripped():
+    config = AnythingLLMConfig(
+        api_key="key", file_paths=[], directory_excludes=[], file_excludes=[],
+        workspace_slug="slug", anythingllm_url="http://myserver:8080/"
+    )
+    assert config.anythingllm_url == "http://myserver:8080"
+
+
 # ---------------------------------------------------------------------------
 # AnythingLLM.supported_file_types
 # ---------------------------------------------------------------------------
