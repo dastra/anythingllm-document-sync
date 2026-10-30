@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import pathlib
@@ -113,9 +114,9 @@ def remove_loaded_documents(anything_llm: AnythingLLM, database: DocumentDatabas
                 database.remove_document(loaded_document.local_file_path)
 
 
-def main():
+def main(project: str | None = None):
     # Fetching config
-    config = AnythingLLMConfig.load_config()
+    config = AnythingLLMConfig.load_config(project)
 
     # Setting up connection to AnythingLLM
     anything_llm = AnythingLLM(config)
@@ -124,7 +125,11 @@ def main():
         return
 
     # Setting up local SQLite database which will store the map of local filename to doc path in AmythingLLM
-    database = DocumentDatabase()
+    database = (
+        DocumentDatabase()
+        if config.project_name == "default"
+        else DocumentDatabase(config.state_directory / "uploaded-docs.db")
+    )
     if not database.initialize_database():
         print("Failed to initialise database.")
         return
@@ -152,4 +157,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Synchronize documents into AnythingLLM")
+    parser.add_argument("--project", help="Named project from config.yaml")
+    main(parser.parse_args().project)

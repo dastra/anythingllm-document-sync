@@ -57,6 +57,41 @@ file-excludes:
 
 **AnythingLLM URL**: Set `anythingllm-url` if your instance is not at `http://localhost:3001` — e.g. a Docker container on a custom port: `http://localhost:8080`
 
+For multiple independent projects, use named profiles. Each profile gets its own
+AnythingLLM workspace and synchronization state:
+
+```yaml
+api-key: YOUR-API-KEY
+anythingllm-url: http://localhost:3001
+
+projects:
+  mml:
+    workspace-slug: mml
+    file-paths:
+      - /Users/username/Documents/MML
+    directory-excludes: []
+    file-excludes:
+      - .DS_Store
+
+  cmi:
+    workspace-slug: cmi
+    file-paths:
+      - /Users/username/Documents/CMI
+    directory-excludes: []
+    file-excludes:
+      - .DS_Store
+```
+
+Run a profile with:
+
+```shell
+python3 ingest_anythingllm_docs.py --project cmi
+```
+
+Each profile stores its database under
+`~/.anythingllm-sync/projects/<project>/uploaded-docs.db`. The legacy single-project
+configuration continues to use `~/.anythingllm-sync/uploaded-docs.db`.
+
 ## Usage
 
 ```shell
