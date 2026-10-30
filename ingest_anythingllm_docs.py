@@ -1,4 +1,5 @@
 import json
+import os
 import pathlib
 from datetime import datetime, timezone
 
@@ -11,24 +12,32 @@ from anythingllm_loader.config import AnythingLLMConfig
 def fetch_local_documents(config: AnythingLLMConfig):
     local_documents = []
     for file_path in config.file_paths:
-        # Find all files
-        for file in pathlib.Path(file_path).rglob("*"):
-            exclude = False
-            for filename_to_exclude in config.file_excludes:
-                if filename_to_exclude in file.name:
-                    exclude = True
-                    break
+        root = pathlib.Path(file_path).expanduser()
+        if not root.exists():
+            continue
 
-            for directory_to_exclude in config.directory_excludes:
-                if directory_to_exclude in str(file.absolute()):
-                    exclude = True
-                    break
+        # os.walk lets us prune excluded directories before descending into them.
+        # In particular, never scan Git metadata from a source archive.
+        if root.is_file():
+            files = [(root.parent, [], [root.name])]
+        else:
+            files = os.walk(root)
 
-            if file.name.split('.')[-1] not in AnythingLLM.supported_file_types():
-                exclude = True
+        for directory, directory_names, filenames in files:
+            directory_path = pathlib.Path(directory)
+            directory_names[:] = [
+                name for name in directory_names
+                if name != ".git" and name not in config.directory_excludes
+            ]
 
-            if file.is_file() and not exclude:
-                # Add full file path to local_documents
+            for filename in filenames:
+                file = directory_path / filename
+                if any(excluded in filename for excluded in config.file_excludes):
+                    continue
+
+                if file.suffix.lower().lstrip('.') not in AnythingLLM.supported_file_types():
+                    continue
+
                 local_documents.append(str(file.absolute()))
 
     return local_documents

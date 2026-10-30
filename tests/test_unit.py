@@ -141,6 +141,44 @@ def test_custom_url_trailing_slash_stripped():
 
 
 # ---------------------------------------------------------------------------
+# Local document discovery
+# ---------------------------------------------------------------------------
+
+def test_fetch_local_documents_prunes_git_directories(tmp_path):
+    (tmp_path / "visible.md").write_text("content")
+    git_objects = tmp_path / ".git" / "objects"
+    git_objects.mkdir(parents=True)
+    (git_objects / "archive.md").write_text("metadata")
+
+    config = AnythingLLMConfig(
+        api_key="key",
+        file_paths=[str(tmp_path)],
+        directory_excludes=[],
+        file_excludes=[],
+        workspace_slug="slug",
+    )
+
+    documents = fetch_local_documents(config)
+
+    assert str(tmp_path / "visible.md") in documents
+    assert str(git_objects / "archive.md") not in documents
+
+
+def test_fetch_local_documents_matches_extensions_case_insensitively(tmp_path):
+    document = tmp_path / "README.MD"
+    document.write_text("content")
+    config = AnythingLLMConfig(
+        api_key="key",
+        file_paths=[str(tmp_path)],
+        directory_excludes=[],
+        file_excludes=[],
+        workspace_slug="slug",
+    )
+
+    assert str(document) in fetch_local_documents(config)
+
+
+# ---------------------------------------------------------------------------
 # AnythingLLM.supported_file_types
 # ---------------------------------------------------------------------------
 

@@ -18,19 +18,17 @@ the workspace, and removes documents that have been deleted locally.
 
 ## Requirements
 
-- Python 3.12.7
+- Python 3.12 or newer
 - AnythingLLM Desktop (or server) running locally at `http://localhost:3001`
-- `pyenv` and `sqlite` (macOS: `brew install pyenv sqlite`)
 
 ## Installation
 
 ```shell
-pyenv install 3.12.7
-pyenv local 3.12.7
-pyenv exec python3 -m venv .venv
+python3 --version  # must be 3.12 or newer
+python3 -m venv .venv
 source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
 ```
 
 ## Configuration
@@ -58,7 +56,7 @@ file-excludes:
 ## Usage
 
 ```shell
-python ingest_anythingllm_docs.py
+python3 ingest_anythingllm_docs.py
 ```
 
 Each run:
@@ -76,19 +74,19 @@ Document upload state is tracked in `~/.anythingllm-sync/uploaded-docs.db` (SQLi
 **Unit tests** (no AnythingLLM instance required — all API calls are mocked):
 
 ```shell
-pytest tests/test_unit.py -v
+python3 -m pytest tests/test_unit.py -v
 ```
 
 **Integration tests** (requires AnythingLLM running and a valid `~/.anythingllm-sync/config.yaml`):
 
 ```shell
-pytest tests/test_integration.py -v
+python3 -m pytest tests/test_integration.py -v
 ```
 
 Run all tests:
 
 ```shell
-pytest tests/ -v
+python3 -m pytest tests/ -v
 ```
 
 ## Project structure
