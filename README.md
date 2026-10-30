@@ -14,7 +14,11 @@ the workspace, and removes documents that have been deleted locally.
 
 ## Supported file types
 
-`txt`, `md`, `org`, `adoc`, `rst`, `html`, `docx`, `odt`, `odp`, `pdf`, `mbox`, `epub`
+`txt`, `md`, `org`, `adoc`, `rst`, `html`, `docx`, `odt`, `odp`, `pdf`, `mbox`, `epub`, `pptx`
+
+PowerPoint files are converted locally to temporary Markdown containing slide text,
+table text, speaker notes, and the original source path. The temporary files are
+removed after upload; the original presentations are never modified.
 
 ## Requirements
 

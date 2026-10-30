@@ -56,4 +56,4 @@ The tool syncs local files into an AnythingLLM workspace. There are two distinct
 
 - Embeddings are done one at a time with a 0.5s sleep to avoid overloading AnythingLLM
 - `embed_new_document` does not surface non-200 responses as a return value, so embedding failures are printed but not acted on by the caller
-- Supported file types: `txt`, `md`, `org`, `adoc`, `rst`, `html`, `docx`, `odt`, `odp`, `pdf`, `mbox`, `epub`
+- Supported file types: `txt`, `md`, `org`, `adoc`, `rst`, `html`, `docx`, `odt`, `odp`, `pdf`, `mbox`, `epub`, `pptx`

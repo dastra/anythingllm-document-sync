@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from anythingllm_loader.database import DocumentDatabase, AnythingLLMDocument
 from anythingllm_loader.anythingllm_api import AnythingLLM
 from anythingllm_loader.config import AnythingLLMConfig
+from anythingllm_loader.powerpoint import temporary_upload_path
 
 
 # From the file paths described in the config, find all files.
@@ -65,8 +66,14 @@ def upload_new_documents(anything_llm: AnythingLLM, database: DocumentDatabase, 
             else:
                 continue  # file unchanged, skip upload
 
-        # upload the document
-        anything_llm_response = anything_llm.upload_document(local_document)
+        # Upload the original file, or a temporary Markdown extraction for PPTX.
+        try:
+            with temporary_upload_path(local_document) as upload_path:
+                anything_llm_response = anything_llm.upload_document(upload_path)
+        except (OSError, ValueError, ImportError) as error:
+            print(f'Failed to prepare {local_document}: {error}')
+            continue
+
         if anything_llm_response is not None:
             database.add_document(AnythingLLMDocument(local_document, local_document_modified_timestamp,
                                                       anything_llm_response['location'], json.dumps(anything_llm_response)

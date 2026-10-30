@@ -32,9 +32,8 @@ class AnythingLLM:
     @staticmethod
     def supported_file_types():
         # Removed 'xlsx' as there doesn't seem to be much useful content to be gained from uploading spreadsheets.
-        # Removed 'pptx' as every pptx we attempt to upload gets the error 'No text content found'
         # Removed 'wav', 'mp3', 'mp4', 'mpeg' as this is targetting text
-        return ['txt', 'md', 'org', 'adoc', 'rst', 'html', 'docx', 'odt', 'odp', 'pdf', 'mbox', 'epub']
+        return ['txt', 'md', 'org', 'adoc', 'rst', 'html', 'docx', 'odt', 'odp', 'pdf', 'mbox', 'epub', 'pptx']
 
     def upload_document(self, local_document_path):
         # Test if the document is empty

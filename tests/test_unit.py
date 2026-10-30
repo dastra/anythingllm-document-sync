@@ -6,6 +6,7 @@ Run with: pytest tests/test_unit.py -v
 """
 
 import pytest
+import pathlib
 from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock, call
 
@@ -14,6 +15,7 @@ import requests as requests_lib
 from anythingllm_loader.config import AnythingLLMConfig
 from anythingllm_loader.anythingllm_api import AnythingLLM
 from anythingllm_loader.database import DocumentDatabase, AnythingLLMDocument
+from anythingllm_loader.powerpoint import extract_pptx_to_markdown, temporary_upload_path
 from ingest_anythingllm_docs import (
     fetch_local_documents,
     upload_new_documents,
@@ -184,14 +186,64 @@ def test_fetch_local_documents_matches_extensions_case_insensitively(tmp_path):
 
 def test_supported_file_types_includes_common_text_formats():
     types = AnythingLLM.supported_file_types()
-    for expected in ["txt", "md", "pdf", "docx", "html"]:
+    for expected in ["txt", "md", "pdf", "docx", "html", "pptx"]:
         assert expected in types
 
 
 def test_supported_file_types_excludes_removed_formats():
     types = AnythingLLM.supported_file_types()
-    for excluded in ["xlsx", "pptx", "wav", "mp3", "mp4", "csv"]:
+    for excluded in ["xlsx", "wav", "mp3", "mp4", "csv"]:
         assert excluded not in types
+
+
+def test_extract_pptx_to_markdown_includes_slide_text_and_speaker_notes(tmp_path):
+    from pptx import Presentation
+
+    source = tmp_path / "briefing.pptx"
+    output = tmp_path / "briefing.md"
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[5])
+    slide.shapes.title.text = "Project overview"
+    text_box = slide.shapes.add_textbox(0, 0, 100, 100)
+    text_box.text = "Confidential project text"
+    slide.notes_slide.notes_text_frame.text = "Speaker note details"
+    presentation.save(source)
+
+    assert extract_pptx_to_markdown(str(source), str(output)) is True
+    markdown = output.read_text()
+    assert "Project overview" in markdown
+    assert "Confidential project text" in markdown
+    assert "Speaker note details" in markdown
+    assert str(source.absolute()) in markdown
+
+
+def test_extract_pptx_to_markdown_does_not_modify_source(tmp_path):
+    from pptx import Presentation
+
+    source = tmp_path / "empty.pptx"
+    output = tmp_path / "empty.md"
+    presentation = Presentation()
+    presentation.save(source)
+    original_bytes = source.read_bytes()
+
+    assert extract_pptx_to_markdown(str(source), str(output)) is False
+    assert source.read_bytes() == original_bytes
+
+
+def test_temporary_pptx_upload_path_is_removed_after_context(tmp_path):
+    from pptx import Presentation
+
+    source = tmp_path / "briefing.pptx"
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[5])
+    slide.shapes.title.text = "Temporary conversion"
+    presentation.save(source)
+
+    with temporary_upload_path(str(source)) as upload_path:
+        assert upload_path.endswith("/briefing.md")
+        assert pathlib.Path(upload_path).exists()
+
+    assert not pathlib.Path(upload_path).exists()
 
 
 # ---------------------------------------------------------------------------
