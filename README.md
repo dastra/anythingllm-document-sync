@@ -27,12 +27,28 @@ removed after upload; the original presentations are never modified.
 
 ## Installation
 
+### From a Git checkout
+
 ```shell
 python3 --version  # must be 3.12 or newer
 python3 -m venv .venv
 source .venv/bin/activate
 python3 -m pip install --upgrade pip
+python3 -m pip install .
+```
+
+For development, install the test dependencies as well:
+
+```shell
 python3 -m pip install -r requirements.txt
+```
+
+### With pipx
+
+`pipx` installs the command and its dependencies in an isolated environment:
+
+```shell
+pipx install git+ssh://gitlab.example.org/group/anythingllm-document-sync.git
 ```
 
 ## Configuration
@@ -83,6 +99,12 @@ projects:
 ```
 
 Run a profile with:
+
+```shell
+anythingllm-document-sync --project cmi
+```
+
+The module-style invocation remains available when working from a checkout:
 
 ```shell
 python3 ingest_anythingllm_docs.py --project cmi

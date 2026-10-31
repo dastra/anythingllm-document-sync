@@ -17,6 +17,7 @@ from anythingllm_loader.anythingllm_api import AnythingLLM
 from anythingllm_loader.database import DocumentDatabase, AnythingLLMDocument
 from anythingllm_loader.powerpoint import extract_pptx_to_markdown, temporary_upload_path
 from ingest_anythingllm_docs import (
+    cli,
     fetch_local_documents,
     upload_new_documents,
     embed_new_documents,
@@ -24,6 +25,13 @@ from ingest_anythingllm_docs import (
     remove_loaded_documents,
     main,
 )
+
+
+def test_cli_accepts_project(monkeypatch):
+    with patch("ingest_anythingllm_docs.main") as mocked_main:
+        cli(["--project", "project-a"])
+
+    mocked_main.assert_called_once_with("project-a")
 
 
 # ---------------------------------------------------------------------------

@@ -156,7 +156,12 @@ def main(project: str | None = None):
     remove_loaded_documents(anything_llm, database, local_documents, loaded_documents)
 
 
-if __name__ == "__main__":
+def cli(argv=None):
     parser = argparse.ArgumentParser(description="Synchronize documents into AnythingLLM")
     parser.add_argument("--project", help="Named project from config.yaml")
-    main(parser.parse_args().project)
+    args = parser.parse_args(argv)
+    main(args.project)
+
+
+if __name__ == "__main__":
+    cli()
