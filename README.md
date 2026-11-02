@@ -29,23 +29,33 @@ removed after upload; the original presentations are never modified.
 
 Prepare the AnythingLLM instance before configuring this synchronizer:
 
-1. Install and start AnythingLLM Desktop (or start the server instance).
-2. Configure the DESY Assistant as the LLM provider. Use the OpenAI-compatible
-   endpoint, model name, and provider credentials supplied for your DESY
-   Assistant deployment. Do not put these credentials into this repository or
-   into the synchronizer configuration unless the deployment explicitly
-   requires it.
-3. Select local embeddings and a local vector database if document content
-   must remain on the workstation or within the approved DESY environment.
-4. Create one AnythingLLM workspace for each independent document project.
-5. Generate an AnythingLLM Developer API key and keep it in the local config
-   file or another approved secret store. Never commit it.
+1. Install and start AnythingLLM Desktop. Confirm that its local API is
+   reachable at `http://localhost:3001` (or record the actual local URL).
+2. In **AI Providers → LLM**, configure the DESY Assistant as an
+   **OpenAI-compatible** provider:
+   - enter the DESY Assistant API base URL;
+   - select the DESY Assistant model name;
+   - enter the DESY Assistant API key in AnythingLLM's provider settings.
+   These three DESY-specific values come from the DESY Assistant service
+   administrator. They are not the same as the AnythingLLM Developer API key.
+3. In **AI Providers → Embedder**, select the local embedding provider/model
+   used by the AnythingLLM installation. Do not select a remote embedding
+   service for confidential archives unless it is explicitly approved.
+4. In **AI Providers → Vector Database**, select the local vector database
+   configured for the installation. This keeps the indexed document content
+   in the local AnythingLLM data directory.
+5. Create one AnythingLLM workspace for each independent document project,
+   for example `mml` and `cmi`. The workspace slug in this tool's config must
+   match the workspace's vector-database identifier.
+6. In **Tools → Developer API**, generate an AnythingLLM Developer API key.
+   Put this key in the local synchronizer config or another approved secret
+   store; never commit it. This is the key used by the synchronizer to call
+   the local AnythingLLM API.
 
-The LLM provider configuration is separate from `anythingllm-url`: the latter
-points to the local AnythingLLM API used by this tool, normally
-`http://localhost:3001`. For DESY-specific endpoint names, model identifiers,
-and access requirements, use the current instructions provided by the DESY
-Assistant service administrator.
+The DESY Assistant endpoint is configured inside AnythingLLM and is used for
+answer generation. The synchronizer's `anythingllm-url` is separate: it points
+to the local AnythingLLM API, normally `http://localhost:3001`. The
+synchronizer does not need the DESY Assistant key.
 
 ## Installation
 
