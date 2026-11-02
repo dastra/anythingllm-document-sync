@@ -33,11 +33,15 @@ Prepare the AnythingLLM instance before configuring this synchronizer:
    reachable at `http://localhost:3001` (or record the actual local URL).
 2. In **AI Providers → LLM**, configure the DESY Assistant as an
    **OpenAI-compatible** provider:
-   - enter the DESY Assistant API base URL;
-   - select the DESY Assistant model name;
+   - choose **Generic OpenAI**;
+   - set **Base URL** to `https://assistant.desy.de/api`;
+   - select the model `desy-assistant`;
+   - set the model context window to `32768` tokens;
+   - set **Max Tokens** to `4096`;
    - enter the DESY Assistant API key in AnythingLLM's provider settings.
-   These three DESY-specific values come from the DESY Assistant service
-   administrator. They are not the same as the AnythingLLM Developer API key.
+   The API key is confidential and must not be copied into this README or
+   committed to the repository. It is not the same as the AnythingLLM
+   Developer API key.
 3. In **AI Providers → Embedder**, select the local embedding provider/model
    used by the AnythingLLM installation. Do not select a remote embedding
    service for confidential archives unless it is explicitly approved.
