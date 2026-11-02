@@ -25,6 +25,28 @@ removed after upload; the original presentations are never modified.
 - Python 3.12 or newer
 - AnythingLLM Desktop (or server) running locally at `http://localhost:3001`
 
+## Before the first synchronization
+
+Prepare the AnythingLLM instance before configuring this synchronizer:
+
+1. Install and start AnythingLLM Desktop (or start the server instance).
+2. Configure the DESY Assistant as the LLM provider. Use the OpenAI-compatible
+   endpoint, model name, and provider credentials supplied for your DESY
+   Assistant deployment. Do not put these credentials into this repository or
+   into the synchronizer configuration unless the deployment explicitly
+   requires it.
+3. Select local embeddings and a local vector database if document content
+   must remain on the workstation or within the approved DESY environment.
+4. Create one AnythingLLM workspace for each independent document project.
+5. Generate an AnythingLLM Developer API key and keep it in the local config
+   file or another approved secret store. Never commit it.
+
+The LLM provider configuration is separate from `anythingllm-url`: the latter
+points to the local AnythingLLM API used by this tool, normally
+`http://localhost:3001`. For DESY-specific endpoint names, model identifiers,
+and access requirements, use the current instructions provided by the DESY
+Assistant service administrator.
+
 ## Installation
 
 ### From a Git checkout
@@ -50,28 +72,6 @@ python3 -m pip install -r requirements.txt
 ```shell
 pipx install git+ssh://gitlab.example.org/group/anythingllm-document-sync.git
 ```
-
-## Before the first synchronization
-
-Prepare the AnythingLLM instance before configuring this synchronizer:
-
-1. Install and start AnythingLLM Desktop (or start the server instance).
-2. Configure the DESY Assistant as the LLM provider. Use the OpenAI-compatible
-   endpoint, model name, and provider credentials supplied for your DESY
-   Assistant deployment. Do not put these credentials into this repository or
-   into the synchronizer configuration unless the deployment explicitly
-   requires it.
-3. Select local embeddings and a local vector database if document content
-   must remain on the workstation or within the approved DESY environment.
-4. Create one AnythingLLM workspace for each independent document project.
-5. Generate an AnythingLLM Developer API key and keep it in the local config
-   file or another approved secret store. Never commit it.
-
-The LLM provider configuration is separate from `anythingllm-url`: the latter
-points to the local AnythingLLM API used by this tool, normally
-`http://localhost:3001`. For DESY-specific endpoint names, model identifiers,
-and access requirements, use the current instructions provided by the DESY
-Assistant service administrator.
 
 ## Configuration
 
