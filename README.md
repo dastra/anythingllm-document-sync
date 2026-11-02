@@ -31,17 +31,11 @@ Prepare the AnythingLLM instance before configuring this synchronizer:
 
 1. Install and start AnythingLLM Desktop. Confirm that its local API is
    reachable at `http://localhost:3001` (or record the actual local URL).
-2. In **AI Providers → LLM**, configure the DESY Assistant as an
-   **OpenAI-compatible** provider:
-   - choose **Generic OpenAI**;
-   - set **Base URL** to `https://assistant.desy.de/api`;
-   - select the model `desy-assistant`;
-   - set the model context window to `32768` tokens;
-   - set **Max Tokens** to `4096`;
-   - enter the DESY Assistant API key in AnythingLLM's provider settings.
-   The API key is confidential and must not be copied into this README or
-   committed to the repository. It is not the same as the AnythingLLM
-   Developer API key.
+2. In **AI Providers → LLM**, configure an approved LLM provider. If it is
+   OpenAI-compatible, choose **Generic OpenAI** and enter its base URL, model
+   name, and provider API key in AnythingLLM's provider settings. Keep provider
+   credentials out of this repository and out of the synchronizer config unless
+   the deployment explicitly requires it.
 3. In **AI Providers → Embedder**, select the local embedding provider/model
    used by the AnythingLLM installation. Do not select a remote embedding
    service for confidential archives unless it is explicitly approved.
@@ -49,19 +43,26 @@ Prepare the AnythingLLM instance before configuring this synchronizer:
    configured for the installation. This keeps the indexed document content
    in the local AnythingLLM data directory.
 5. Create one AnythingLLM workspace for each independent document project,
-   for example `mml` and `cmi`. The workspace slug in this tool's config must
-   match the workspace's vector-database identifier.
+   for example **CMI** and **My research project**. The workspace slug in this
+   tool's config must match the workspace's vector-database identifier.
 6. In **Tools → Developer API**, generate an AnythingLLM Developer API key.
    Put this key in the local synchronizer config or another approved secret
    store; never commit it. This is the key used by the synchronizer to call
    the local AnythingLLM API.
 
-The DESY Assistant endpoint is configured inside AnythingLLM and is used for
-answer generation. The synchronizer's `anythingllm-url` is separate: it points
-to the local AnythingLLM API, normally `http://localhost:3001`. The
-synchronizer does not need the DESY Assistant key.
+The LLM provider is configured inside AnythingLLM and is used for answer
+generation. The synchronizer's `anythingllm-url` is separate: it points to the
+local AnythingLLM API, normally `http://localhost:3001`.
 
 ## Installation
+
+### With pipx
+
+`pipx` installs the command and its dependencies in an isolated environment:
+
+```shell
+pipx install git+ssh://gitlab.example.org/group/anythingllm-document-sync.git
+```
 
 ### From a Git checkout
 
@@ -79,14 +80,6 @@ For development, install the test dependencies as well:
 python3 -m pip install -r requirements.txt
 ```
 
-### With pipx
-
-`pipx` installs the command and its dependencies in an isolated environment:
-
-```shell
-pipx install git+ssh://gitlab.example.org/group/anythingllm-document-sync.git
-```
-
 ## Configuration
 
 If you plan to synchronize more than one independent archive or AnythingLLM
@@ -94,6 +87,8 @@ workspace, use the named multi-project configuration shown below. Consider this
 format before creating the configuration file; each project gets its own
 workspace settings and synchronization database. The single-project format
 below remains suitable for a simple installation.
+
+### Single-project configuration
 
 Create `~/.anythingllm-sync/config.yaml`:
 
@@ -114,6 +109,8 @@ file-excludes:
 **Workspace slug**: Click workspace → settings cog → Vector Database tab → Vector database identifier
 
 **AnythingLLM URL**: Set `anythingllm-url` if your instance is not at `http://localhost:3001` — e.g. a Docker container on a custom port: `http://localhost:8080`
+
+### Multi-project configuration
 
 For multiple independent projects, use named profiles. Each profile gets its own
 AnythingLLM workspace and synchronization state:
@@ -152,6 +149,15 @@ The module-style invocation remains available when working from a checkout:
 python3 ingest_anythingllm_docs.py --project cmi
 ```
 
+Use `--dry-run` before a long synchronization to inspect planned additions,
+changes, and deletions without modifying AnythingLLM. Add `--limit 20` for a
+small diagnostic sample. The limit is deliberately rejected for a real run,
+because a partial source list could otherwise look like deleted documents.
+
+```shell
+python3 ingest_anythingllm_docs.py --project cmi --dry-run --limit 20
+```
+
 Each profile stores its database under
 `~/.anythingllm-sync/projects/<project>/uploaded-docs.db`. The legacy single-project
 configuration continues to use `~/.anythingllm-sync/uploaded-docs.db`.
@@ -169,6 +175,55 @@ Each run:
 4. Unembeds documents no longer present locally
 5. Removes unembedded documents from AnythingLLM's document store
 6. Cleans up the local tracking database
+
+### Scheduled operation with macOS LaunchAgents
+
+On macOS, a LaunchAgent can run one project periodically. Keep the deployment
+code, configuration, databases, and logs below `~/.anythingllm-sync/`, and run
+the deployed command rather than an arbitrary development checkout. For
+example, save this as
+`~/Library/LaunchAgents/org.anythingllm.sync.project.plist` and replace the
+placeholder paths and project name:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>org.anythingllm.sync.project</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/username/.local/bin/anythingllm-document-sync</string>
+    <string>--project</string>
+    <string>project</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>28800</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/username/.anythingllm-sync/logs/project.stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/username/.anythingllm-sync/logs/project.stderr.log</string>
+</dict>
+</plist>
+```
+
+`StartInterval` is in seconds; `28800` runs the project every eight hours.
+Use a distinct label, project argument, and log files for each workspace. Load,
+run, inspect, and unload the agent with:
+
+```shell
+launchctl bootstrap gui/$(id -u) \
+  ~/Library/LaunchAgents/org.anythingllm.sync.project.plist
+launchctl kickstart -k gui/$(id -u)/org.anythingllm.sync.project
+launchctl print gui/$(id -u)/org.anythingllm.sync.project
+tail -f ~/.anythingllm-sync/logs/project.stdout.log
+launchctl bootout gui/$(id -u)/org.anythingllm.sync.project
+```
+
+Stop or restart the agent before changing its plist or deployment code, and do
+not modify the original document archive while a synchronization is running.
 
 Document upload state is tracked in `~/.anythingllm-sync/uploaded-docs.db` (SQLite).
 
