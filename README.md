@@ -43,7 +43,7 @@ Prepare the AnythingLLM instance before configuring this synchronizer:
    configured for the installation. This keeps the indexed document content
    in the local AnythingLLM data directory.
 5. Create one AnythingLLM workspace for each independent document project,
-   for example **CMI** and **My research project**. The workspace slug in this
+   for example **Project A** and **My research project**. The workspace slug in this
    tool's config must match the workspace's vector-database identifier.
 6. In **Tools → Developer API**, generate an AnythingLLM Developer API key.
    Put this key in the local synchronizer config or another approved secret
@@ -120,18 +120,18 @@ api-key: YOUR-API-KEY
 anythingllm-url: http://localhost:3001
 
 projects:
-  mml:
-    workspace-slug: mml
+  project-a:
+    workspace-slug: project-a
     file-paths:
-      - /Users/username/Documents/MML
+      - /Users/username/Documents/ProjectA
     directory-excludes: []
     file-excludes:
       - .DS_Store
 
-  cmi:
-    workspace-slug: cmi
+  project-b:
+    workspace-slug: project-b
     file-paths:
-      - /Users/username/Documents/CMI
+      - /Users/username/Documents/ProjectB
     directory-excludes: []
     file-excludes:
       - .DS_Store
@@ -140,13 +140,13 @@ projects:
 Run a profile with:
 
 ```shell
-anythingllm-document-sync --project cmi
+anythingllm-document-sync --project project-b
 ```
 
 The module-style invocation remains available when working from a checkout:
 
 ```shell
-python3 ingest_anythingllm_docs.py --project cmi
+python3 ingest_anythingllm_docs.py --project project-b
 ```
 
 Use `--dry-run` before a long synchronization to inspect planned additions,
@@ -155,7 +155,7 @@ small diagnostic sample. The limit is deliberately rejected for a real run,
 because a partial source list could otherwise look like deleted documents.
 
 ```shell
-python3 ingest_anythingllm_docs.py --project cmi --dry-run --limit 20
+python3 ingest_anythingllm_docs.py --project project-b --dry-run --limit 20
 ```
 
 Each profile stores its database under
