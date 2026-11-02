@@ -51,7 +51,35 @@ python3 -m pip install -r requirements.txt
 pipx install git+ssh://gitlab.example.org/group/anythingllm-document-sync.git
 ```
 
+## Before the first synchronization
+
+Prepare the AnythingLLM instance before configuring this synchronizer:
+
+1. Install and start AnythingLLM Desktop (or start the server instance).
+2. Configure the DESY Assistant as the LLM provider. Use the OpenAI-compatible
+   endpoint, model name, and provider credentials supplied for your DESY
+   Assistant deployment. Do not put these credentials into this repository or
+   into the synchronizer configuration unless the deployment explicitly
+   requires it.
+3. Select local embeddings and a local vector database if document content
+   must remain on the workstation or within the approved DESY environment.
+4. Create one AnythingLLM workspace for each independent document project.
+5. Generate an AnythingLLM Developer API key and keep it in the local config
+   file or another approved secret store. Never commit it.
+
+The LLM provider configuration is separate from `anythingllm-url`: the latter
+points to the local AnythingLLM API used by this tool, normally
+`http://localhost:3001`. For DESY-specific endpoint names, model identifiers,
+and access requirements, use the current instructions provided by the DESY
+Assistant service administrator.
+
 ## Configuration
+
+If you plan to synchronize more than one independent archive or AnythingLLM
+workspace, use the named multi-project configuration shown below. Consider this
+format before creating the configuration file; each project gets its own
+workspace settings and synchronization database. The single-project format
+below remains suitable for a simple installation.
 
 Create `~/.anythingllm-sync/config.yaml`:
 
