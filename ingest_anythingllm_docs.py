@@ -1,34 +1,45 @@
+import argparse
 import json
+import os
 import pathlib
 from datetime import datetime, timezone
 
 from anythingllm_loader.database import DocumentDatabase, AnythingLLMDocument
 from anythingllm_loader.anythingllm_api import AnythingLLM
 from anythingllm_loader.config import AnythingLLMConfig
+from anythingllm_loader.powerpoint import temporary_upload_path
 
 
 # From the file paths described in the config, find all files.
 def fetch_local_documents(config: AnythingLLMConfig):
     local_documents = []
     for file_path in config.file_paths:
-        # Find all files
-        for file in pathlib.Path(file_path).rglob("*"):
-            exclude = False
-            for filename_to_exclude in config.file_excludes:
-                if filename_to_exclude in file.name:
-                    exclude = True
-                    break
+        root = pathlib.Path(file_path).expanduser()
+        if not root.exists():
+            continue
 
-            for directory_to_exclude in config.directory_excludes:
-                if directory_to_exclude in str(file.absolute()):
-                    exclude = True
-                    break
+        # os.walk lets us prune excluded directories before descending into them.
+        # In particular, never scan Git metadata from a source archive.
+        if root.is_file():
+            files = [(root.parent, [], [root.name])]
+        else:
+            files = os.walk(root)
 
-            if file.name.split('.')[-1] not in AnythingLLM.supported_file_types():
-                exclude = True
+        for directory, directory_names, filenames in files:
+            directory_path = pathlib.Path(directory)
+            directory_names[:] = [
+                name for name in directory_names
+                if name != ".git" and name not in config.directory_excludes
+            ]
 
-            if file.is_file() and not exclude:
-                # Add full file path to local_documents
+            for filename in filenames:
+                file = directory_path / filename
+                if any(excluded in filename for excluded in config.file_excludes):
+                    continue
+
+                if file.suffix.lower().lstrip('.') not in AnythingLLM.supported_file_types():
+                    continue
+
                 local_documents.append(str(file.absolute()))
 
     return local_documents
@@ -56,8 +67,14 @@ def upload_new_documents(anything_llm: AnythingLLM, database: DocumentDatabase, 
             else:
                 continue  # file unchanged, skip upload
 
-        # upload the document
-        anything_llm_response = anything_llm.upload_document(local_document)
+        # Upload the original file, or a temporary Markdown extraction for PPTX.
+        try:
+            with temporary_upload_path(local_document) as upload_path:
+                anything_llm_response = anything_llm.upload_document(upload_path)
+        except (OSError, ValueError, ImportError) as error:
+            print(f'Failed to prepare {local_document}: {error}')
+            continue
+
         if anything_llm_response is not None:
             database.add_document(AnythingLLMDocument(local_document, local_document_modified_timestamp,
                                                       anything_llm_response['location'], json.dumps(anything_llm_response)
@@ -97,9 +114,9 @@ def remove_loaded_documents(anything_llm: AnythingLLM, database: DocumentDatabas
                 database.remove_document(loaded_document.local_file_path)
 
 
-def main():
+def main(project: str | None = None):
     # Fetching config
-    config = AnythingLLMConfig.load_config()
+    config = AnythingLLMConfig.load_config(project)
 
     # Setting up connection to AnythingLLM
     anything_llm = AnythingLLM(config)
@@ -108,7 +125,11 @@ def main():
         return
 
     # Setting up local SQLite database which will store the map of local filename to doc path in AmythingLLM
-    database = DocumentDatabase()
+    database = (
+        DocumentDatabase()
+        if config.project_name == "default"
+        else DocumentDatabase(config.state_directory / "uploaded-docs.db")
+    )
     if not database.initialize_database():
         print("Failed to initialise database.")
         return
@@ -135,5 +156,12 @@ def main():
     remove_loaded_documents(anything_llm, database, local_documents, loaded_documents)
 
 
+def cli(argv=None):
+    parser = argparse.ArgumentParser(description="Synchronize documents into AnythingLLM")
+    parser.add_argument("--project", help="Named project from config.yaml")
+    args = parser.parse_args(argv)
+    main(args.project)
+
+
 if __name__ == "__main__":
-    main()
+    cli()

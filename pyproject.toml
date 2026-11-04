@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "anythingllm-document-sync"
+version = "0.1.0"
+description = "Synchronize local documents into AnythingLLM workspaces"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "requests>=2.31",
+    "PyYAML>=6.0",
+    "python-pptx>=0.6.23",
+]
+
+[project.scripts]
+anythingllm-document-sync = "ingest_anythingllm_docs:cli"
+
+[tool.setuptools]
+py-modules = ["ingest_anythingllm_docs"]
+
+[tool.setuptools.packages.find]
+include = ["anythingllm_loader*"]

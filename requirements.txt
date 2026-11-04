@@ -1,3 +1,4 @@
 requests
 PyYAML
 pytest
+python-pptx

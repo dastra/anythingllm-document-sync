@@ -5,18 +5,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Setup
 
 ```shell
-pyenv install 3.12.7
-pyenv local 3.12.7
-pyenv exec python3 -m venv .venv
+python3 --version  # must be 3.12 or newer
+python3 -m venv .venv
 source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
 ```
 
 ## Running
 
 ```shell
-python ingest_anythingllm_docs.py
+python3 ingest_anythingllm_docs.py
 ```
 
 Requires `~/.anythingllm-sync/config.yaml`:
@@ -57,4 +56,4 @@ The tool syncs local files into an AnythingLLM workspace. There are two distinct
 
 - Embeddings are done one at a time with a 0.5s sleep to avoid overloading AnythingLLM
 - `embed_new_document` does not surface non-200 responses as a return value, so embedding failures are printed but not acted on by the caller
-- Supported file types: `txt`, `md`, `org`, `adoc`, `rst`, `html`, `docx`, `odt`, `odp`, `pdf`, `mbox`, `epub`
+- Supported file types: `txt`, `md`, `org`, `adoc`, `rst`, `html`, `docx`, `odt`, `odp`, `pdf`, `mbox`, `epub`, `pptx`
