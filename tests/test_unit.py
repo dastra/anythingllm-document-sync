@@ -611,7 +611,7 @@ def test_main_exits_early_on_auth_failure(tmp_path):
     with patch.object(AnythingLLMConfig, "load_config", return_value=test_config), \
          patch("ingest_anythingllm_docs.AnythingLLM", return_value=mock_api_instance), \
          patch("anythingllm_loader.database.DATABASE_FILENAME", db_path):
-        main()
+        assert main() == 1
 
     mock_api_instance.upload_document.assert_not_called()
     mock_api_instance.embed_new_document.assert_not_called()
@@ -627,7 +627,7 @@ def test_main_exits_early_on_db_init_failure(tmp_path):
          patch("ingest_anythingllm_docs.AnythingLLM", return_value=mock_api_instance), \
          patch("anythingllm_loader.database.DATABASE_FILENAME", db_path), \
          patch.object(DocumentDatabase, "initialize_database", return_value=False):
-        main()
+        assert main() == 1
 
     mock_api_instance.upload_document.assert_not_called()
 
@@ -661,7 +661,7 @@ def test_main_uploads_and_embeds_documents(tmp_path):
     with patch.object(AnythingLLMConfig, "load_config", return_value=test_config), \
          patch("ingest_anythingllm_docs.AnythingLLM", _patch_api_class(mock_api_instance)), \
          patch("anythingllm_loader.database.DATABASE_FILENAME", db_path):
-        main()
+        assert main() == 0
 
     mock_api_instance.upload_document.assert_called_once()
     mock_api_instance.embed_new_document.assert_called_once_with("custom-documents/test.txt-uuid.json")

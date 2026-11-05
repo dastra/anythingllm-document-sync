@@ -1,5 +1,6 @@
 import json
 import pathlib
+import sys
 from datetime import datetime, timezone
 
 from anythingllm_loader.database import DocumentDatabase, AnythingLLMDocument
@@ -105,13 +106,13 @@ def main():
     anything_llm = AnythingLLM(config)
     if not anything_llm.authenticate():
         print("Failed to authenticate with local AnythingLLM API. Please check your API key.")
-        return
+        return 1
 
     # Setting up local SQLite database which will store the map of local filename to doc path in AmythingLLM
     database = DocumentDatabase()
     if not database.initialize_database():
         print("Failed to initialise database.")
-        return
+        return 1
 
     # These are the documents on our local disk
     local_documents = fetch_local_documents(config)
@@ -134,6 +135,9 @@ def main():
     # Remove any documents which are loaded but not present locally
     remove_loaded_documents(anything_llm, database, local_documents, loaded_documents)
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    # A non-zero exit code lets schedulers such as cron or launchd see that the sync failed
+    sys.exit(main())
