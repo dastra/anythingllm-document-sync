@@ -16,6 +16,7 @@ from anythingllm_loader.anythingllm_api import AnythingLLM
 from anythingllm_loader.database import DocumentDatabase, AnythingLLMDocument
 from ingest_anythingllm_docs import (
     fetch_local_documents,
+    find_unavailable_file_paths,
     upload_new_documents,
     embed_new_documents,
     remove_embedded_documents,
@@ -383,6 +384,32 @@ def test_unembed_document_url_has_slash_before_slug(api):
 
 
 # ---------------------------------------------------------------------------
+# find_unavailable_file_paths
+# ---------------------------------------------------------------------------
+
+def test_find_unavailable_file_paths_returns_empty_when_all_readable(tmp_path):
+    test_config = AnythingLLMConfig("key", [str(tmp_path)], [], [], "slug")
+    assert find_unavailable_file_paths(test_config) == []
+
+
+def test_find_unavailable_file_paths_returns_missing_path(tmp_path):
+    missing = str(tmp_path / "unmounted")
+    test_config = AnythingLLMConfig("key", [str(tmp_path), missing], [], [], "slug")
+    assert find_unavailable_file_paths(test_config) == [missing]
+
+
+def test_find_unavailable_file_paths_returns_unreadable_path(tmp_path):
+    test_config = AnythingLLMConfig("key", [str(tmp_path)], [], [], "slug")
+    with patch("ingest_anythingllm_docs.os.listdir", side_effect=PermissionError):
+        assert find_unavailable_file_paths(test_config) == [str(tmp_path)]
+
+
+def test_find_unavailable_file_paths_ignores_single_file(test_file):
+    test_config = AnythingLLMConfig("key", [str(test_file)], [], [], "slug")
+    assert find_unavailable_file_paths(test_config) == []
+
+
+# ---------------------------------------------------------------------------
 # upload_new_documents
 # ---------------------------------------------------------------------------
 
@@ -611,7 +638,7 @@ def test_main_exits_early_on_auth_failure(tmp_path):
     with patch.object(AnythingLLMConfig, "load_config", return_value=test_config), \
          patch("ingest_anythingllm_docs.AnythingLLM", return_value=mock_api_instance), \
          patch("anythingllm_loader.database.DATABASE_FILENAME", db_path):
-        main()
+        assert main() == 1
 
     mock_api_instance.upload_document.assert_not_called()
     mock_api_instance.embed_new_document.assert_not_called()
@@ -627,9 +654,28 @@ def test_main_exits_early_on_db_init_failure(tmp_path):
          patch("ingest_anythingllm_docs.AnythingLLM", return_value=mock_api_instance), \
          patch("anythingllm_loader.database.DATABASE_FILENAME", db_path), \
          patch.object(DocumentDatabase, "initialize_database", return_value=False):
-        main()
+        assert main() == 1
 
     mock_api_instance.upload_document.assert_not_called()
+
+
+def test_main_does_not_remove_documents_when_file_path_is_missing(tmp_path):
+    test_config = AnythingLLMConfig("key", [str(tmp_path / "unmounted")], [], [], "slug")
+    db_path = tmp_path / "test.db"
+
+    mock_api_instance = MagicMock()
+    mock_api_instance.authenticate.return_value = True
+    mock_api_instance.fetch_embedded_workspace_documents.return_value = [
+        "custom-documents/doc.txt-uuid.json"
+    ]
+
+    with patch.object(AnythingLLMConfig, "load_config", return_value=test_config), \
+         patch("ingest_anythingllm_docs.AnythingLLM", _patch_api_class(mock_api_instance)), \
+         patch("anythingllm_loader.database.DATABASE_FILENAME", db_path):
+        assert main() == 1
+
+    mock_api_instance.unembed_document.assert_not_called()
+    mock_api_instance.unload_document.assert_not_called()
 
 
 def _patch_api_class(mock_api_instance):
@@ -661,7 +707,7 @@ def test_main_uploads_and_embeds_documents(tmp_path):
     with patch.object(AnythingLLMConfig, "load_config", return_value=test_config), \
          patch("ingest_anythingllm_docs.AnythingLLM", _patch_api_class(mock_api_instance)), \
          patch("anythingllm_loader.database.DATABASE_FILENAME", db_path):
-        main()
+        assert main() == 0
 
     mock_api_instance.upload_document.assert_called_once()
     mock_api_instance.embed_new_document.assert_called_once_with("custom-documents/test.txt-uuid.json")

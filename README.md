@@ -69,6 +69,8 @@ Each run:
 5. Removes unembedded documents from AnythingLLM's document store
 6. Cleans up the local tracking database
 
+If any `file-paths` entry is missing or can't be read (e.g. an unmounted drive), the run stops before changing anything, so the documents under it aren't removed from AnythingLLM. The script exits with a non-zero status when a run fails to start, so cron or launchd can report it.
+
 Document upload state is tracked in `~/.anythingllm-sync/uploaded-docs.db` (SQLite).
 
 ## Running the tests

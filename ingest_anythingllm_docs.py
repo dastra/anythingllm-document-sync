@@ -1,5 +1,7 @@
 import json
+import os
 import pathlib
+import sys
 from datetime import datetime, timezone
 
 from anythingllm_loader.database import DocumentDatabase, AnythingLLMDocument
@@ -32,6 +34,22 @@ def fetch_local_documents(config: AnythingLLMConfig):
                 local_documents.append(str(file.absolute()))
 
     return local_documents
+
+
+# rglob returns nothing for a file path which is missing or unreadable (e.g. an unmounted drive), which would look as
+# though every document under it had been deleted locally.
+def find_unavailable_file_paths(config: AnythingLLMConfig):
+    unavailable_file_paths = []
+    for file_path in config.file_paths:
+        try:
+            os.listdir(file_path)
+        except NotADirectoryError:
+            # a single file is ignored by fetch_local_documents, so has no documents to lose
+            continue
+        except OSError:
+            unavailable_file_paths.append(file_path)
+
+    return unavailable_file_paths
 
 
 def upload_new_documents(anything_llm: AnythingLLM, database: DocumentDatabase, local_documents: list[str],
@@ -101,17 +119,23 @@ def main():
     # Fetching config
     config = AnythingLLMConfig.load_config()
 
+    # Stop before changing anything, otherwise documents under a missing file path would be removed from AnythingLLM
+    unavailable_file_paths = find_unavailable_file_paths(config)
+    if unavailable_file_paths:
+        print("Not syncing, as these file paths are missing or unreadable: " + ", ".join(unavailable_file_paths))
+        return 1
+
     # Setting up connection to AnythingLLM
     anything_llm = AnythingLLM(config)
     if not anything_llm.authenticate():
         print("Failed to authenticate with local AnythingLLM API. Please check your API key.")
-        return
+        return 1
 
     # Setting up local SQLite database which will store the map of local filename to doc path in AmythingLLM
     database = DocumentDatabase()
     if not database.initialize_database():
         print("Failed to initialise database.")
-        return
+        return 1
 
     # These are the documents on our local disk
     local_documents = fetch_local_documents(config)
@@ -134,6 +158,9 @@ def main():
     # Remove any documents which are loaded but not present locally
     remove_loaded_documents(anything_llm, database, local_documents, loaded_documents)
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    # A non-zero exit code lets schedulers such as cron or launchd see that the sync failed
+    sys.exit(main())
